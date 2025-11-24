@@ -1,6 +1,5 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
-using System.Collections.Generic;
 using Utils;
 
 namespace UtilTest
@@ -74,12 +73,32 @@ namespace UtilTest
         [TestMethod]
         public void changeUserRoleTest()
         {
-            // Assign first role
-            Assert.IsTrue(p.AssignUserRole(u, Roles.Tester));
-            Assert.AreEqual(Roles.Tester, p.GetUserRole(u));
-            // Change role
-            Assert.IsTrue(p.AssignUserRole(u, Roles.Admin));
-            Assert.AreEqual(Roles.Admin, p.GetUserRole(u));
+            // Asignar rol existente (Tester)
+            Assert.IsTrue(p.AssignUserRole(u, "Tester"));
+            Assert.AreEqual("Tester", p.GetUserRole(u).Name);
+            // Cambiar a Admin
+            Assert.IsTrue(p.AssignUserRole(u, "Admin"));
+            Assert.AreEqual("Admin", p.GetUserRole(u).Name);
+            // Intentar rol inexistente
+            Assert.IsFalse(p.AssignUserRole(u, "NoExiste"));
+            Assert.AreEqual("Admin", p.GetUserRole(u).Name);
+        }
+
+        [TestMethod]
+        public void addDynamicRoleAndAssignTest()
+        {
+            var added = p.RoleRegistry.AddRole("Analyst", new[] { Permissions.ExecuteTest, Permissions.CreateTest });
+            Assert.IsTrue(added);
+            Assert.IsTrue(p.AssignUserRole(u, "Analyst"));
+            Assert.AreEqual("Analyst", p.GetUserRole(u).Name);
+        }
+
+        [TestMethod]
+        public void getUserPermissionsTest()
+        {
+            p.AssignUserRole(u, "Lead");
+            var perms = p.GetUserPermissions(u);
+            CollectionAssert.AreEquivalent(new[] { Permissions.ExecuteTest, Permissions.CreateTest, Permissions.ManageProject }, (System.Collections.ICollection)perms);
         }
     }
 }

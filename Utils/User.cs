@@ -102,5 +102,10 @@ namespace Utils
         {
             IsActive = false;
         }
+
+        public void ActivateAccount()
+        {
+            IsActive = true;
+        }
     }
 }

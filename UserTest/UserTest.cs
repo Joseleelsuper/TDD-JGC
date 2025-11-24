@@ -87,6 +87,8 @@ namespace UtilTest
             Assert.IsTrue(u.IsActive);
             u.DeactivateAccount();
             Assert.IsFalse(u.IsActive);
+            u.ActivateAccount();
+            Assert.IsTrue(u.IsActive);
         }
 
         [TestMethod]
@@ -101,7 +103,7 @@ namespace UtilTest
         [TestMethod]
         public void changePasswordTest()
         {
-            var originalHash = u.Password; // usar valor actual de la contraseña hasheada
+            var originalHash = u.Password; 
             Assert.IsTrue(u.SetPassword("NewP@ssword2"));
             Assert.AreNotEqual(originalHash, u.Password);
         }

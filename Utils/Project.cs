@@ -2,34 +2,12 @@
 
 namespace Utils
 {
-    // Los roles y permisos acá serían los por defecto que también tiene TestLink, como ejemplo.
-    public enum Roles
-    {
-        Viewer,
-        Tester,
-        Lead,
-        Admin
-    }
-
     public enum Permissions
     {
         ExecuteTest,
         CreateTest,
         ManageProject,
         ManageUsers
-    }
-
-    public static class RolePermissions
-    {
-        private static readonly Dictionary<Roles, List<Permissions>> _map = new Dictionary<Roles, List<Permissions>>
-        {
-            { Roles.Viewer, new List<Permissions>{ Permissions.ExecuteTest } },
-            { Roles.Tester, new List<Permissions>{ Permissions.ExecuteTest, Permissions.CreateTest } },
-            { Roles.Lead, new List<Permissions>{ Permissions.ExecuteTest, Permissions.CreateTest, Permissions.ManageProject } },
-            { Roles.Admin, new List<Permissions>{ Permissions.ExecuteTest, Permissions.CreateTest, Permissions.ManageProject, Permissions.ManageUsers } }
-        };
-
-        public static IList<Permissions> GetPermissions(Roles role) => _map[role].AsReadOnly();
     }
 
     public class Project
@@ -40,7 +18,9 @@ namespace Utils
         public string Description { get; private set; }
         public bool IsPublic { get; private set; }
 
-        private Dictionary<User, Roles> _userRoles = new Dictionary<User, Roles>();
+        public DynamicRoleRegistry RoleRegistry { get; } = new DynamicRoleRegistry();
+
+        private Dictionary<User, Role> _userRoles = new Dictionary<User, Role>();
         private static int _idSeq = 0;
 
         public Project(string name, string prefix, string description, bool isPublic)
@@ -50,6 +30,11 @@ namespace Utils
             Prefix = prefix;
             Description = description;
             IsPublic = isPublic;
+            // Cargar roles por defecto.
+            RoleRegistry.AddRole("Viewer", new [] { Permissions.ExecuteTest });
+            RoleRegistry.AddRole("Tester", new [] { Permissions.ExecuteTest, Permissions.CreateTest });
+            RoleRegistry.AddRole("Lead", new [] { Permissions.ExecuteTest, Permissions.CreateTest, Permissions.ManageProject });
+            RoleRegistry.AddRole("Admin", new [] { Permissions.ExecuteTest, Permissions.CreateTest, Permissions.ManageProject, Permissions.ManageUsers });
         }
 
         private int NextId() => ++_idSeq;
@@ -64,7 +49,6 @@ namespace Utils
         public bool SetPrefix(string newPrefix)
         {
             if (string.IsNullOrWhiteSpace(newPrefix)) return false;
-            // Validar solo letras mayúsculas y dígitos, longitud 2..6
             if (newPrefix.Length < 2 || newPrefix.Length > 6) return false;
             foreach (var c in newPrefix)
             {
@@ -85,18 +69,33 @@ namespace Utils
         {
             IsPublic = isPublic;
         }
-
-        public bool AssignUserRole(User user, Roles role)
+        public bool AssignUserRole(User user, string roleName)
         {
-            if (user == null) return false;
+            if (user == null || string.IsNullOrWhiteSpace(roleName)) return false;
+            var role = RoleRegistry.TryGetRole(roleName);
+            if (role == null) return false;
             _userRoles[user] = role;
             return true;
         }
 
-        public Roles GetUserRole(User user)
+        public bool AssignUserRole(User user, Role role)
+        {
+            if (user == null || role == null) return false;
+            _userRoles[user] = role;
+            return true;
+        }
+
+        public Role GetUserRole(User user)
         {
             if (user != null && _userRoles.TryGetValue(user, out var role)) return role;
-            return Roles.Viewer;
+            // Rol por defecto
+            return RoleRegistry.TryGetRole("Viewer");
+        }
+
+        public IReadOnlyCollection<Permissions> GetUserPermissions(User user)
+        {
+            var r = GetUserRole(user);
+            return r != null ? r.Permissions : new Permissions[0];
         }
     }
 }
