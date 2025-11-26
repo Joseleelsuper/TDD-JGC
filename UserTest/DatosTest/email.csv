@@ -1,0 +1,5 @@
+valid@example.com;1
+invalid email;0
+@domain.com;0
+user@domain;0
+user.name@domain.com;1

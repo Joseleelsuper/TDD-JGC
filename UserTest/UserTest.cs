@@ -1,6 +1,10 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using Utils;
+using System.IO;
+using System.Data;
+using System.Linq;
+using System.Collections.Generic;
 
 namespace UtilTest
 {
@@ -8,6 +12,7 @@ namespace UtilTest
     public class UsuarioTest
     {
         private User u = null;
+        public TestContext TestContext { get; set; }
 
         [TestInitialize]
         public void Setup()
@@ -106,6 +111,40 @@ namespace UtilTest
             var originalHash = u.Password; 
             Assert.IsTrue(u.SetPassword("NewP@ssword2"));
             Assert.AreNotEqual(originalHash, u.Password);
+        }
+        public static IEnumerable<object[]> LeerEmailCsv()
+        {
+            var filePath = Path.GetFullPath(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..", "..", "DatosTest", "email.csv"));
+            if (!File.Exists(filePath)) yield break;
+            foreach (var linea in File.ReadAllLines(filePath).Where(l => l != null))
+            {
+                var campos = linea.Split(';');
+                if (campos.Length >= 2)
+                {
+                    yield return new object[]
+                    {
+                        campos[0] == "null" ? null : campos[0],
+                        int.Parse(campos[1])
+                    };
+                }
+            }
+        }
+
+        [TestMethod]
+        [DynamicData(nameof(LeerEmailCsv), DynamicDataSourceType.Method)]
+        public void EmailTest(string email, int expected)
+        {
+            u.SetEmail("baseline@ubu.es");
+            bool ok = u.SetEmail(email);
+            Assert.AreEqual(expected == 1, ok, $"Email '{email}' esperado {expected}");
+            if (expected == 1)
+            {
+                Assert.AreEqual(email, u.Email);
+            }
+            else
+            {
+                Assert.AreEqual("baseline@ubu.es", u.Email);
+            }
         }
     }
 }

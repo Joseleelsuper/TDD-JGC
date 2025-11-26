@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Security.Cryptography;
 using System.Text;
+using System.Net.Mail;
 
 namespace Utils
 {
@@ -79,9 +80,19 @@ namespace Utils
 
         public bool SetEmail(string newEmail)
         {
-            if (string.IsNullOrWhiteSpace(newEmail) || !newEmail.Contains("@") || newEmail.StartsWith("@") || newEmail.EndsWith("@")) return false;
-            Email = newEmail;
-            return true;
+            if (string.IsNullOrWhiteSpace(newEmail)) return false;
+            try
+            {
+                var addr = new MailAddress(newEmail);
+                var domain = addr.Host;
+                if (string.IsNullOrWhiteSpace(domain) || !domain.Contains(".")) return false;
+                Email = addr.Address;
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
         }
 
         public bool SetPassword(string newRawPassword)
